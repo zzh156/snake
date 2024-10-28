@@ -1,6 +1,7 @@
 import sys
 import random
 import pygame
+from pygame.examples.cursors import image
 from pygame.locals import *
 
 # A*寻路算法的节点类
@@ -59,6 +60,8 @@ def add_to_open(open_list, neighbor_node):
 
 def draw_background():
     screen.fill((255, 255, 255))
+    # screen.blit("snake.jpg",(0,0))
+
 
 def draw_snake():
     for segment in snake_list:
@@ -151,14 +154,33 @@ def generate_walls(level):
     walls = [pos for pos in walls if pos not in snake_list and pos not in food_list]
     return walls
 
+
 def choose_mode_and_difficulty():
     global mode, speed, base_speed
     while True:
         draw_background()
+        image = pygame.image.load("snake.jpg")
+        # 获取窗口尺寸
+        window_width, window_height = screen.get_size()
+
+        # 计算缩放比例以保持图片宽高比
+        scale_factor = min(window_width / image.get_width(), window_height / image.get_height())
+
+        # 根据缩放比例调整图片大小
+        new_image_size = (int(image.get_width() * scale_factor), int(image.get_height() * scale_factor))
+        scaled_image = pygame.transform.scale(image, new_image_size)
+
+        # 计算图片居中的位置
+        image_x = (window_width - new_image_size[0]) // 2
+        image_y = 0
+
+        # 绘制背景图片
+        screen.blit(scaled_image, (image_x, image_y))
+
         font = pygame.font.Font(None, 74)
         text = font.render('Choose Mode:', True, (0, 0, 0))
         screen.blit(text, (width // 2 - text.get_width() // 2, height // 3))
-        
+
         manual_text = font.render('1. Manual', True, (0, 0, 0))
         ai_text = font.render('2. AI', True, (0, 0, 0))
         screen.blit(manual_text, (width // 2 - manual_text.get_width() // 2, height // 2))
