@@ -77,6 +77,11 @@ def draw_score():
     score_text = font.render(f'Score: {score}', True, (0, 0, 0))
     screen.blit(score_text, (10, height - 40))
 
+def draw_level():
+    font = pygame.font.Font(None, 48)
+    level_text = font.render(f'Level: {level}', True, (0, 0, 0))
+    screen.blit(level_text, (10, height - 80))
+
 def check_food():
     if snake_list[0] in food_list:
         food_list.remove(snake_list[0])
@@ -102,17 +107,113 @@ def add_food():
 def game_over():
     font = pygame.font.Font(None, 74)
     text = font.render('Game Over', True, (0, 0, 0))
-    screen.blit(text, (width // 2 - text.get_width() // 2, height // 2 - text.get_height() // 2))
+    score_text = font.render(f'Score: {score}', True, (0, 0, 0))
+    restart_text = font.render('Press R to Restart', True, (0, 0, 0))
+    
+    screen.fill((255, 255, 255))  # 填充背景
+    screen.blit(text, (width // 2 - text.get_width() // 2, height // 3))
+    screen.blit(score_text, (width // 2 - score_text.get_width() // 2, height // 2))
+    screen.blit(restart_text, (width // 2 - restart_text.get_width() // 2, height // 2 + 50))
+    
     pygame.display.flip()
-    pygame.time.delay(2000)
+
+    # 等待玩家按下 R 键重新开始
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_r:
+                    waiting = False  # 退出等待状态以重新开始
 
 def reset_game():
-    global snake_list, food_list, walls, running, score
+    global snake_list, food_list, walls, running, score, speed, level
     snake_list = [(100, 100), (80, 100), (60, 100)]
     food_list = [(200, 200)]
-    walls = [(200, 100), (220, 100), (240, 100), (260, 100), (280, 100)]  # 添加障碍物
+    walls = generate_walls(level)  # 根据关卡生成墙
     score = 0  # 重置分数
+    speed = base_speed  # 重置速度
+    level = 1  # 重置关卡
     running = True
+
+def generate_walls(level):
+    walls = []
+    # 根据关卡增加障碍物
+    if level == 1:
+        walls = [(200, 100), (220, 100), (240, 100)]
+    elif level == 2:
+        walls = [(random.randint(0, (width // 20) - 1) * 20, random.randint(0, (height // 20) - 1) * 20) for _ in range(8)]
+    elif level == 3:
+        walls = [(random.randint(0, (width // 20) - 1) * 20, random.randint(0, (height // 20) - 1) * 20) for _ in range(18)]
+    # 确保障碍物不与蛇或食物重叠
+    walls = [pos for pos in walls if pos not in snake_list and pos not in food_list]
+    return walls
+
+def choose_mode_and_difficulty():
+    global mode, speed, base_speed
+    while True:
+        draw_background()
+        font = pygame.font.Font(None, 74)
+        text = font.render('Choose Mode:', True, (0, 0, 0))
+        screen.blit(text, (width // 2 - text.get_width() // 2, height // 3))
+        
+        manual_text = font.render('1. Manual', True, (0, 0, 0))
+        ai_text = font.render('2. AI', True, (0, 0, 0))
+        screen.blit(manual_text, (width // 2 - manual_text.get_width() // 2, height // 2))
+        screen.blit(ai_text, (width // 2 - ai_text.get_width() // 2, height // 2 + 50))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_1:
+                    mode = 'manual'
+                    choose_difficulty()
+                    return
+                elif event.key == K_2:
+                    mode = 'ai'
+                    choose_difficulty()
+                    return
+
+def choose_difficulty():
+    global base_speed, speed
+    while True:
+        draw_background()
+        font = pygame.font.Font(None, 74)
+        text = font.render('Choose Difficulty:', True, (0, 0, 0))
+        screen.blit(text, (width // 2 - text.get_width() // 2, height // 3))
+        
+        easy_text = font.render('1. Easy', True, (0, 0, 0))
+        medium_text = font.render('2. Medium', True, (0, 0, 0))
+        hard_text = font.render('3. Hard', True, (0, 0, 0))
+        screen.blit(easy_text, (width // 2 - easy_text.get_width() // 2, height // 2))
+        screen.blit(medium_text, (width // 2 - medium_text.get_width() // 2, height // 2 + 50))
+        screen.blit(hard_text, (width // 2 - hard_text.get_width() // 2, height // 2 + 100))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_1:
+                    base_speed = 100  # 基础速度
+                    speed = base_speed
+                    return
+                elif event.key == K_2:
+                    base_speed = 75  # 中等速度
+                    speed = base_speed
+                    return
+                elif event.key == K_3:
+                    base_speed = 50  # 高速
+                    speed = base_speed
+                    return
 
 # 初始化pygame
 pygame.init()
@@ -120,40 +221,73 @@ width, height = 800, 760  # 调整窗口高度以留出分数区域
 screen = pygame.display.set_mode((width, height))
 
 # 游戏状态
+base_speed = 100  # 默认基础速度
+level = 1  # 当前关卡
 reset_game()
+mode = 'manual'  # 默认模式
+direction = (20, 0)  # 默认向右移动
+
+choose_mode_and_difficulty()  # 选择游戏模式和难度
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if mode == 'manual':
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_UP:
+                    direction = (0, -20)
+                elif event.key == K_DOWN:
+                    direction = (0, 20)
+                elif event.key == K_LEFT:
+                    direction = (-20, 0)
+                elif event.key == K_RIGHT:
+                    direction = (20, 0)
 
     draw_background()
     draw_snake()
     draw_food()
     draw_walls()
     draw_score()  # 绘制分数
+    draw_level()  # 绘制当前关卡
 
     if check_food():
         add_food()
         score += 1  # 增加分数
+        speed = max(50, base_speed - score * 2)  # 随得分提升速度
 
     if check_dead():
         game_over()
         reset_game()  # 重新开始游戏
 
+    # 关卡提升
+    if score >= 10 and level == 1:  # 第一个关卡
+        level = 2
+        walls = generate_walls(level)  # 更新障碍物
+        print("Level up! Now at level: 2")
+    elif score >= 20 and level == 2:  # 第二个关卡
+        level = 3
+        walls = generate_walls(level)  # 更新障碍物
+        print("Level up! Now at level: 3")
+
     # 更新蛇的位置
-    head = snake_list[0]
-    # 在这里添加AI逻辑控制蛇的移动
-    food = min(food_list, key=lambda f: (head[0] - f[0])**2 + (head[1] - f[1])**2)
-    path = astar(head, food, walls, snake_list)
-    if path and len(path) > 1:
-        snake_list.insert(0, path[1])
-        snake_list.pop()
-    else:
-        snake_list.insert(0, head)  # 正常移动
+    if mode == 'manual':
+        head = snake_list[0]
+        new_head = (head[0] + direction[0], head[1] + direction[1])
+        snake_list.insert(0, new_head)
+        snake_list.pop()  # 移动蛇身
+    elif mode == 'ai':
+        head = snake_list[0]
+        food = min(food_list, key=lambda f: (head[0] - f[0])**2 + (head[1] - f[1])**2)
+        path = astar(head, food, walls, snake_list)
+        if path and len(path) > 1:
+            snake_list.insert(0, path[1])
+            snake_list.pop()
+        else:
+            snake_list.insert(0, head)  # 正常移动
 
     pygame.display.flip()
-    pygame.time.delay(100)
+    pygame.time.delay(speed)
 
 pygame.quit()
 sys.exit()
